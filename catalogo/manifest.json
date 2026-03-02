@@ -1,0 +1,26 @@
+{
+  "name": "Somax Studios Catalogo",
+  "short_name": "Somax",
+  "description": "Sistema interno de gerenciamento de catálogos musicais Somax Studios.",
+  "start_url": "/catalogo/?source=pwa",
+  "scope": "/catalogo/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/catalogo/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/catalogo/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
