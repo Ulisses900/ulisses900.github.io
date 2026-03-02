@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ficha Técnica do Artista | Somax Studios</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    --ink:#0f172a;         /* slate-900 */
+    --muted:#475569;       /* slate-600 */
+    --line:#e2e8f0;        /* slate-200 */
+    --bg:#f8fafc;          /* slate-50 */
+    --primary:#4f46e5;     /* indigo-600 */
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+  }
+
+  /* Barra topo (tela) */
+  .topbar{
+    position:sticky;
+    top:0;
+    background:#fff;
+    border-bottom:1px solid var(--line);
+    padding:12px 16px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    z-index:10;
+  }
+  .btn{
+    appearance:none;
+    border:1px solid var(--line);
+    background:#fff;
+    padding:10px 12px;
+    border-radius:10px;
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:all 0.1s ease;
+  }
+  .btn:hover{
+    background:var(--bg);
+    border-color:#cbd5e1;
+  }
+  .btn.primary{ background:var(--primary); color:#fff; border-color:var(--primary); }
+  .btn.primary:hover{ background:#4338ca; border-color:#4338ca; }
+
+  .wrap{
+    max-width:1200px;
+    margin:0 auto;
+    padding:18px 16px 40px;
+  }
+
+  /* Cabeçalho impressão */
+  .sheet{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 4px 12px rgba(0,0,0,0.02);
+  }
+  .sheet-header{
+    padding:22px 22px 18px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    background: linear-gradient(to bottom, #ffffff, #fafafa);
+  }
+  .title{
+    margin:0;
+    font-size:22px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:-0.02em;
+    color:var(--primary);
+  }
+  .sub{
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:600;
+  }
+  .meta{
+    text-align:right;
+    min-width:220px;
+  }
+  .meta .k{ color:var(--muted); font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; }
+  .meta .v{ margin-top:4px; font-size:13px; font-weight:700; color:var(--ink); }
+
+  .badges{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+  .badge{
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 12px;
+    font-size:12px;
+    font-weight:700;
+    background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,0.02);
+  }
+  .badge.on{ border-color:#bbf7d0; background:#f0fdf4; color:#166534; }
+  .badge.off{ border-color:#e2e8f0; background:#f8fafc; color:#475569; }
+  .badge strong{ font-weight:900; margin-right:4px; }
+
+  /* Tapes */
+  .tape-section{
+    padding:20px 22px;
+    border-bottom:1px solid var(--line);
+  }
+  .tape-section:last-child{
+    border-bottom:none;
+  }
+  .tape-header{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+  }
+  .tape-title{
+    font-size:18px;
+    font-weight:900;
+    text-transform:uppercase;
+    color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .tape-meta{
+    display:flex;
+    gap:12px;
+    font-size:11px;
+    color:var(--muted);
+    font-weight:600;
+    flex-wrap:wrap;
+  }
+  .tape-meta span{
+    background:var(--bg);
+    padding:4px 10px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    font-weight:700;
+  }
+  .tape-status{
+    font-weight:900;
+    font-size:11px;
+    padding:4px 10px;
+    border-radius:20px;
+    text-transform:uppercase;
+  }
+  .tape-status.on{ background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+  .tape-status.off{ background:#f8fafc; color:#94a3b8; border:1px solid #e2e8f0; }
+
+  /* Informações adicionais do tape */
+  .tape-info{
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:14px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px;
+    background:var(--bg);
+    padding:8px 12px;
+    border-radius:10px;
+  }
+  .tape-info strong{
+    font-weight:900;
+    color:var(--ink);
+    margin-right:4px;
+  }
+
+  /* Tabela de faixas */
+  .table-faixas{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    margin-top:8px;
+  }
+  .table-faixas th{
+    text-align:left;
+    padding:10px 12px 8px;
+    background:#f1f5f9;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:#475569;
+    border-bottom:2px solid var(--line);
+    font-size:11px;
+  }
+  .table-faixas td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  .table-faixas td:first-child, .table-faixas th:first-child{ padding-left:16px; }
+  .table-faixas td:last-child, .table-faixas th:last-child{ padding-right:16px; }
+
+  /* Responsividade mobile: tabela vira lista */
+  @media (max-width:640px){
+    .table-faixas thead{
+      display:none;
+    }
+    .table-faixas,
+    .table-faixas tbody,
+    .table-faixas tr,
+    .table-faixas td{
+      display:block;
+      width:100%;
+    }
+    .table-faixas tr{
+      margin-bottom:14px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px;
+      background:#fff;
+      box-shadow:0 2px 6px rgba(0,0,0,0.02);
+    }
+    .table-faixas td{
+      border:none;
+      padding:6px 0;
+      display:flex;
+      align-items:flex-start;
+    }
+    .table-faixas td::before{
+      content:attr(data-label);
+      font-weight:900;
+      width:100px;
+      min-width:100px;
+      color:var(--muted);
+      text-transform:uppercase;
+      font-size:10px;
+    }
+  }
+
+  .footer{
+    padding:16px 22px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:500;
+    border-top:1px solid var(--line);
+    background:#fcfcfc;
+  }
+  .footer .print-hide{
+    /* elementos que devem sumir na impressão */
+  }
+
+  /* PRINT */
+  @media print{
+    body{ background:#fff; }
+    .topbar{ display:none !important; }
+    .wrap{ max-width:100%; padding:0; }
+    .sheet{ border:none; border-radius:0; box-shadow:none; }
+    .sheet-header{ background:#fff; padding:15px 20px; }
+    .footer{ border-top:1px solid #ccc; background:#fff; }
+    /* Esconde textos auxiliares na impressão */
+    .footer .print-hide,
+    #footerHint{
+      display:none !important;
+    }
+    .tape-section{ break-inside:avoid; }
+    .table-faixas td{ border-color:#ccc; }
+    .badge{ border:1px solid #aaa; background:#fff; }
+  }
+</style>
+</head>
+
+<body>
+  <!-- Barra só para tela -->
+  <div class="topbar">
+    <div style="font-weight:900; text-transform:uppercase; letter-spacing:.06em; font-size:12px;">
+      <i class="fas fa-print" style="margin-right:6px;"></i> Ficha Técnica do Artista
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn" id="btnVoltar">Voltar</button>
+      <button class="btn primary" id="btnPrint" onclick="window.print()">Imprimir / PDF</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div>
+          <h1 class="title" id="artistName">Carregando...</h1>
+          <p class="sub">Ficha completa do artista com todos os tapes e faixas.</p>
+
+          <div class="badges">
+            <div class="badge"><strong>Tapes:</strong> <span id="totalTapes">0</span></div>
+            <div class="badge"><strong>Faixas:</strong> <span id="totalFaixas">0</span></div>
+            <div class="badge on"><strong>ON:</strong> <span id="totalOn">0</span></div>
+            <div class="badge off"><strong>OFF:</strong> <span id="totalOff">0</span></div>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div class="k">Data do relatório</div>
+          <div class="v" id="reportDate">--/--/----</div>
+          <div style="height:8px;"></div>
+          <div class="k">Sistema</div>
+          <div class="v">Somax Studios</div>
+        </div>
+      </div>
+
+      <!-- Container onde os tapes e faixas serão inseridos -->
+      <div id="tapesContainer"></div>
+
+      <div class="footer">
+        <div class="print-hide">Relatório interativo – use Imprimir para gerar PDF</div>
+        <div class="mono" id="footerHint">Artista ID: —</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Font Awesome para ícone (opcional, apenas para a barra) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script>
+  const supabaseClient = supabase.createClient(
+    'https://edabpftowxcyvsmuzzdf.supabase.co',
+    'sb_publishable_xUUhpgcgM7bc2Q5a02smMw_n5xDicbW'
+  );
+
+  const artistaId = new URLSearchParams(window.location.search).get('id');
+  if (!artistaId) location.href = 'artistas.html';
+
+  function esc(s){
+    return String(s ?? '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+
+  function formatBRDate(d=new Date()){
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = d.getFullYear();
+    return `${dd}/${mm}/${yy}`;
+  }
+
+  async function load() {
+    document.getElementById('reportDate').textContent = formatBRDate();
+    document.getElementById('footerHint').textContent = `Artista ID: ${artistaId}`;
+
+    // 1) Dados do artista
+    const { data: artista, error: artistaErr } = await supabaseClient
+      .from('artistas')
+      .select('nome')
+      .eq('id', artistaId)
+      .single();
+
+    if (artistaErr) {
+      document.getElementById('artistName').textContent = 'Artista não encontrado';
+    } else {
+      document.getElementById('artistName').textContent = artista.nome;
+    }
+
+    // 2) Tapes do artista com suas faixas e nome da gravadora (tabela gravadoras)
+    const { data: tapes, error } = await supabaseClient
+      .from('tapes')
+      .select(`
+        *,
+        gravadoras ( nome ),
+        faixas ( * )
+      `)
+      .eq('artista_id', artistaId)
+      .order('titulo', { ascending: true });
+
+    if (error) {
+      document.getElementById('tapesContainer').innerHTML = `<div style="padding:20px; color:red;">Erro ao carregar tapes: ${error.message}</div>`;
+      return;
+    }
+
+    // Estatísticas
+    const totalTapes = tapes?.length || 0;
+    let totalFaixas = 0;
+    let totalOn = 0;
+    let totalOff = 0;
+
+    tapes?.forEach(tape => {
+      totalFaixas += tape.faixas?.length || 0;
+      if (tape.subiu_streaming) totalOn++; else totalOff++;
+    });
+
+    document.getElementById('totalTapes').textContent = totalTapes;
+    document.getElementById('totalFaixas').textContent = totalFaixas;
+    document.getElementById('totalOn').textContent = totalOn;
+    document.getElementById('totalOff').textContent = totalOff;
+
+    // Renderizar os tapes
+    const container = document.getElementById('tapesContainer');
+    if (!totalTapes) {
+      container.innerHTML = '<div style="padding:30px; text-align:center; color:#94a3b8; font-weight:800;">Nenhum tape encontrado para este artista.</div>';
+      return;
+    }
+
+    let html = '';
+    tapes.forEach(tape => {
+      const gravadoraNome = tape.gravadoras?.nome || '—';
+      const statusClass = tape.subiu_streaming ? 'on' : 'off';
+      const statusText = tape.subiu_streaming ? 'ON' : 'OFF';
+
+      html += `<div class="tape-section">`;
+      html += `<div class="tape-header">`;
+      html += `<div class="tape-title">${esc(tape.titulo)}</div>`;
+      html += `<div class="tape-meta">`;
+      if (tape.numero_tape) html += `<span>Nº ${esc(tape.numero_tape)}</span>`;
+      if (tape.ano) html += `<span>${esc(tape.ano)}</span>`;
+      if (gravadoraNome !== '—') html += `<span>${esc(gravadoraNome)}</span>`;
+      html += `<span class="tape-status ${statusClass}">${statusText}</span>`;
+      html += `</div></div>`; // fecha tape-header
+
+      // Informações adicionais: gênero e observações (se houver)
+      if (tape.genero || tape.observacoes) {
+        html += `<div class="tape-info">`;
+        if (tape.genero) html += `<div><strong>Gênero:</strong> ${esc(tape.genero)}</div>`;
+        if (tape.observacoes) html += `<div><strong>Observações:</strong> ${esc(tape.observacoes)}</div>`;
+        html += `</div>`;
+      }
+
+      // Tabela de faixas
+      const faixas = tape.faixas || [];
+      if (faixas.length === 0) {
+        html += `<div style="font-size:12px; color:#94a3b8; padding:10px 0;">Nenhuma faixa cadastrada para este tape.</div>`;
+      } else {
+        html += `<table class="table-faixas">`;
+        html += `<thead><tr>`;
+        html += `<th>Lado</th><th>Título da Música</th><th>Autor</th><th>Editora</th><th>Gravadora</th><th>%</th>`;
+        html += `</tr></thead><tbody>`;
+
+        // Ordenar faixas por número (caso exista)
+        faixas.sort((a, b) => (a.numero || 0) - (b.numero || 0)).forEach(f => {
+          html += `<tr>`;
+          html += `<td data-label="Lado">${esc(f.lado || '—')}</td>`;
+          html += `<td data-label="Música">${esc(f.musica || '—')}</td>`;
+          html += `<td data-label="Autor">${esc(f.autor || '—')}</td>`;
+          html += `<td data-label="Editora">${esc(f.editora || '—')}</td>`;
+          // Coluna GRAVADORA (vem do tape, não da faixa individual)
+          html += `<td data-label="Gravadora">${esc(tape.gravadoras?.nome) || '—'}</td>`;
+          html += `<td data-label="%">${f.percentual ? f.percentual + '%' : '—'}</td>`;
+          html += `</tr>`;
+        });
+
+        html += `</tbody></table>`;
+      }
+
+      html += `</div>`; // fecha tape-section
+    });
+
+    container.innerHTML = html;
+  }
+
+  // Botão Voltar com fallback
+  document.getElementById('btnVoltar').addEventListener('click', function() {
+    if (document.referrer && document.referrer !== '') {
+      history.back();
+    } else {
+      window.location.href = 'artistas.html';
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>

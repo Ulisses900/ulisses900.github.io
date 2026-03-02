@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ver Artista | Somax Studios</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+<main class="min-h-screen p-4 md:p-10">
+
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="min-w-0">
+      <h1 id="nome-artista" class="text-xl md:text-2xl font-black uppercase truncate text-slate-900">Artista</h1>
+      <p class="text-slate-500 text-xs md:text-sm">Tapes vinculados ao artista</p>
+    </div>
+    
+    <div class="flex items-center gap-2 w-full md:w-auto">
+      <button id="btn-exportar" class="flex-1 md:flex-none px-3 py-2.5 bg-emerald-600 text-white rounded-lg text-[10px] md:text-xs font-black uppercase hover:bg-emerald-700 transition-colors">
+        <i class="fas fa-file-csv mr-1"></i> Exportar
+      </button>
+
+      <a id="btn-imprimir" class="flex-1 md:flex-none px-3 py-2.5 bg-slate-900 text-white rounded-lg text-[10px] md:text-xs font-black uppercase text-center hover:bg-slate-800 transition-colors">
+        <i class="fas fa-print mr-1"></i> Imprimir
+      </a>
+      
+      <a href="artistas.html" class="px-3 py-2.5 border rounded-lg text-[10px] md:text-xs font-black hover:bg-slate-100 transition-colors whitespace-nowrap">
+        ← <span class="hidden md:inline">Voltar</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+    <div class="px-4 md:px-6 py-3 bg-slate-50 border-b text-xs md:text-sm font-bold">
+      TOTAL DE TAPES: <span id="total-tapes" class="text-indigo-600">0</span>
+    </div>
+
+    <div class="hidden md:block">
+      <table class="w-full table-fixed text-left">
+        <thead class="bg-slate-50 border-b text-[10px] uppercase font-bold text-slate-500">
+          <tr>
+            <th class="px-6 py-4 w-24">Nº</th>
+            <th class="px-6 py-4">Título</th>
+            <th class="px-6 py-4 w-24">Status</th>
+            <th class="px-6 py-4 w-32 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tapes-container-desktop" class="divide-y text-sm"></tbody>
+      </table>
+    </div>
+
+    <div id="tapes-container-mobile" class="md:hidden divide-y"></div>
+  </div>
+
+</main>
+
+<script>
+  const supabaseClient = supabase.createClient(
+    'https://edabpftowxcyvsmuzzdf.supabase.co',
+    'sb_publishable_xUUhpgcgM7bc2Q5a02smMw_n5xDicbW'
+  );
+
+  const artistaId = new URLSearchParams(window.location.search).get('id');
+  if (!artistaId) location.href = 'artistas.html';
+
+  // Configura o link de impressão do artista completo
+  document.getElementById('btn-imprimir').href = `ficha_artista.html?id=${artistaId}`;
+
+  let artistaNome = '';
+  let tapesCache = [];
+
+  function esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+
+  async function carregarArtista() {
+    try {
+      const { data, error } = await supabaseClient.from('artistas').select('nome').eq('id', artistaId).single();
+      if (error) throw error;
+      artistaNome = data?.nome || 'Artista';
+      const el = document.getElementById('nome-artista');
+      if (el) el.textContent = artistaNome;
+    } catch (err) { console.error("Erro ao carregar artista:", err); }
+  }
+
+  async function carregarTapes() {
+    try {
+      const { data, count, error } = await supabaseClient
+        .from('tapes')
+        .select('id,titulo,numero_tape,subiu_streaming', { count: 'exact' })
+        .eq('artista_id', artistaId)
+        .order('titulo', { ascending: true });
+
+      if (error) throw error;
+      
+      tapesCache = data || [];
+      const elTotal = document.getElementById('total-tapes');
+      if (elTotal) elTotal.textContent = count || 0;
+
+      renderizar();
+    } catch (err) { console.error("Erro ao carregar tapes:", err); }
+  }
+
+  function renderizar() {
+    const desktop = document.getElementById('tapes-container-desktop');
+    const mobile  = document.getElementById('tapes-container-mobile');
+    
+    // Render Desktop com botão de Visualizar (Eye)
+    if (desktop) {
+      desktop.innerHTML = tapesCache.map(t => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-6 py-4 text-xs text-slate-400">#${esc(t.numero_tape || '-')}</td>
+          <td class="px-6 py-4 font-bold uppercase break-words">${esc(t.titulo || '---')}</td>
+          <td class="px-6 py-4">${t.subiu_streaming ? '<span class="text-emerald-600 text-xs font-bold">ON</span>' : '<span class="text-slate-300 text-xs">OFF</span>'}</td>
+          <td class="px-6 py-4 text-right">
+            <div class="flex justify-end gap-4">
+              <a href="ficha_tape.html?id=${t.id}" class="text-slate-400 hover:text-indigo-600" title="Ver Ficha">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="editar.html?id=${t.id}" class="text-slate-400 hover:text-indigo-600" title="Editar">
+                <i class="fas fa-pen"></i>
+              </a>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    // Render Mobile com botões agrupados
+    if (mobile) {
+      mobile.innerHTML = tapesCache.map(t => `
+        <div class="p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-[10px] text-slate-400">#${esc(t.numero_tape || '-')}</span>
+                ${t.subiu_streaming ? '<span class="text-emerald-600 font-black text-[9px] border border-emerald-200 bg-emerald-50 px-2 py-0.5 rounded-full">ON</span>' : '<span class="text-slate-300 font-black text-[9px]">OFF</span>'}
+              </div>
+              <div class="mt-2 font-black uppercase text-[13px] leading-tight break-words">${esc(t.titulo || '---')}</div>
+            </div>
+            <div class="flex flex-col gap-3 shrink-0">
+              <a href="ficha_tape.html?id=${t.id}" class="p-2 text-slate-400 hover:text-indigo-600">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="editar.html?id=${t.id}" class="p-2 text-slate-400 hover:text-indigo-600">
+                <i class="fas fa-pen"></i>
+              </a>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  function exportarCSV() {
+    if (!tapesCache.length) return;
+    const headers = ['ID', 'Numero_Tape', 'Titulo', 'Streaming'];
+    const rows = tapesCache.map(t => [t.id, t.numero_tape || '', t.titulo || '', t.subiu_streaming ? 'ON' : 'OFF']);
+    const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tapes_${artistaNome.replace(/\s+/g, '_')}.csv`;
+    a.click();
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await carregarArtista();
+    await carregarTapes();
+    const btnExportar = document.getElementById('btn-exportar');
+    if (btnExportar) btnExportar.addEventListener('click', exportarCSV);
+  });
+</script>
+</body>
+</html>

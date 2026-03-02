@@ -1,130 +1,347 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Somax Studios | Gerenciar Tapes</title>
-    <link rel="manifest" href="manifest.json">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Somax Studios | Gerenciar Tapes</title>
 
-    <script src="menu.js"></script>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .filter-active {
-            background-color: #4f46e5 !important;
-            color: white !important;
-            border-color: #4f46e5 !important;
-        }
-        /* Efeito de destaque na linha ao passar o mouse */
-        tr:hover .action-btn { opacity: 1; }
-    </style>
+<style>
+body { font-family: 'Inter', sans-serif; }
+.filter-active {
+    background-color: #4f46e5 !important;
+    color: white !important;
+    border-color: #4f46e5 !important;
+}
+
+/* Responsividade da tabela: vira cards em mobile */
+@media (max-width: 640px) {
+    table, thead, tbody, tr, th, td {
+        display: block;
+    }
+    thead {
+        display: none; /* esconde cabeçalho */
+    }
+    tr {
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        background: white;
+    }
+    td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.35rem 0;
+        border: none;
+        font-size: 0.875rem;
+    }
+    td:before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
+        width: 35%;
+    }
+    td:last-child {
+        border-top: 1px dashed #e2e8f0;
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+    td:last-child:before {
+        content: "Ações";
+        width: auto;
+        margin-right: auto;
+    }
+    /* Ajuste para células de status */
+    td[data-label="Status"] span {
+        font-weight: 600;
+    }
+}
+</style>
 </head>
+
 <body class="bg-slate-50 text-slate-900">
 
-    <main class="md:ml-64 min-h-screen">
-        <div id="header-container"></div>
+<!-- O menu lateral será injetado via JavaScript antes deste conteúdo -->
+<div class="md:ml-64"> <!-- Desloca o conteúdo principal no desktop para não ficar sob a sidebar -->
 
-        <div class="p-8">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <!-- Container onde o cabeçalho será inserido -->
+    <div id="header-container"></div>
+
+    <main class="min-h-screen p-4 md:p-10">
+
+        <!-- HEADER (título da página e ações) -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-2xl font-bold uppercase tracking-tight">Gerenciar Tapes</h1>
+                <p class="text-slate-500 text-sm italic">Painel de controle de acervo</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="bg-white border px-4 py-2 rounded-lg text-sm font-bold shadow-sm">
+                    TOTAL: <span id="total-records" class="text-indigo-600">0</span>
+                </div>
+
+                <button id="export-csv-btn"
+                   class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 flex items-center gap-1">
+                    <i class="fas fa-file-csv"></i> Exportar CSV
+                </button>
+
+                <a href="adicionar.html"
+                   class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700">
+                    + Novo Registro
+                </a>
+            </div>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="bg-white p-5 rounded-xl border shadow-sm mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight uppercase">Gerenciar Tapes</h1>
-                    <p class="text-slate-500 text-sm italic">Painel de controle de acervo.</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold text-slate-700 shadow-sm">
-                        TOTAL: <span id="total-records" class="text-indigo-600">0</span>
-                    </div>
-                    <a href="adicionar.html" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 uppercase">
-                        + Novo Registro
-                    </a>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase">Busca</label>
-                        <input type="text" id="search-input" placeholder="Título..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase">Gravadora</label>
-                        <select id="filter-gravadora" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"><option value="">Todas</option></select>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase">Streaming</label>
-                        <div class="flex gap-1">
-                            <button onclick="setStatusFilter('all', this)" class="filter-active flex-1 py-2 rounded-lg border text-[10px] font-bold uppercase">Todos</button>
-                            <button onclick="setStatusFilter('on', this)" class="flex-1 py-2 rounded-lg border text-[10px] font-bold uppercase">On</button>
-                            <button onclick="setStatusFilter('off', this)" class="flex-1 py-2 rounded-lg border text-[10px] font-bold uppercase">Off</button>
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase">Classificar</label>
-                        <div class="flex gap-1">
-                            <button id="sort-tape" class="sort-btn filter-active flex-1 py-2 rounded-lg border text-[10px] font-bold uppercase">Título</button>
-                            <button id="sort-artist" class="sort-btn flex-1 py-2 rounded-lg border text-[10px] font-bold uppercase">Artista</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500">
-                            <tr>
-                                <th class="px-6 py-4">Nº</th>
-                                <th class="px-6 py-4">Título</th>
-                                <th class="px-6 py-4">Artista</th>
-                                <th class="px-6 py-4">Status</th>
-                                <th class="px-6 py-4 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tapes-list-container" class="divide-y divide-slate-100 text-sm italic">
-                            </tbody>
-                    </table>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase">Busca</label>
+                    <input type="text" id="search-input"
+                           placeholder="Buscar por título..."
+                           class="w-full px-4 py-2 bg-slate-50 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                 </div>
 
-                <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                    <div class="text-[11px] text-slate-500 font-medium">PÁGINA <span id="current-page">1</span></div>
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase">Gravadora</label>
+                    <select id="filter-gravadora"
+                            class="w-full px-3 py-2 bg-slate-50 border rounded-lg text-sm">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase">Streaming</label>
                     <div class="flex gap-2">
-                        <button id="prev-page" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-black hover:bg-slate-100 disabled:opacity-30">ANTERIOR</button>
-                        <button id="next-page" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-black hover:bg-slate-100 disabled:opacity-30">PRÓXIMA</button>
+                        <button onclick="setStatusFilter('all', this)"
+                                class="filter-active flex-1 py-2 rounded-lg border text-xs font-bold uppercase">
+                            Todos
+                        </button>
+                        <button onclick="setStatusFilter('on', this)"
+                                class="flex-1 py-2 rounded-lg border text-xs font-bold uppercase">
+                            On
+                        </button>
+                        <button onclick="setStatusFilter('off', this)"
+                                class="flex-1 py-2 rounded-lg border text-xs font-bold uppercase">
+                            Off
+                        </button>
                     </div>
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase">Ordenar</label>
+                    <div class="flex gap-2">
+                        <button id="sort-titulo"
+                                class="filter-active flex-1 py-2 rounded-lg border text-xs font-bold uppercase">
+                            Título
+                        </button>
+                        <button id="sort-artista"
+                                class="flex-1 py-2 rounded-lg border text-xs font-bold uppercase">
+                            Artista
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TABELA -->
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <div class="w-full">
+                <table class="w-full table-fixed text-left">
+                    <thead class="bg-slate-50 border-b text-xs uppercase font-bold text-slate-500">
+                        <tr>
+                            <th class="px-2 md:px-6 py-3 w-[10%]">Nº</th>
+                            <th class="px-2 md:px-6 py-3 w-[40%]">Título</th>
+                            <th class="px-2 md:px-6 py-3 w-[30%]">Artista</th>
+                            <th class="px-2 md:px-6 py-3 w-[10%]">Status</th>
+                            <th class="px-2 md:px-6 py-3 w-[10%] text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tapes-list-container"
+                           class="divide-y divide-slate-100 text-sm">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINAÇÃO -->
+            <div class="px-6 py-4 bg-slate-50 border-t flex items-center justify-between text-xs">
+                <div>Página <span id="current-page">1</span></div>
+                <div class="flex gap-2">
+                    <button id="prev-page" class="px-4 py-2 border rounded-lg">Anterior</button>
+                    <button id="next-page" class="px-4 py-2 border rounded-lg">Próxima</button>
                 </div>
             </div>
         </div>
+
     </main>
 
-    <script>
-        const SUPABASE_URL = 'https://edabpftowxcyvsmuzzdf.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_xUUhpgcgM7bc2Q5a02smMw_n5xDicbW';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</div>
+
+<!-- Script do menu (sidebar e cabeçalho) -->
+<script>
+    // ==================== menu.js ====================
+    const sidebarHTML = `
+    <aside id="sidebar"
+    class="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 z-50 flex flex-col justify-between transition-transform -translate-x-full md:translate-x-0">
+
+        <!-- Parte superior -->
+        <div>
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-xl font-bold text-indigo-600 flex items-center gap-2">
+                    <i class="fas fa-compact-disc"></i> Somax Studios
+                </h2>
+                <p class="text-[11px] text-slate-500 mt-2 uppercase tracking-wide">
+                    Acervo Musical Digital
+                </p>
+            </div>
+
+            <nav class="mt-4">
+                <a href="index.html" class="nav-link flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors hover:bg-slate-50">
+                    <i class="fas fa-home w-5"></i> Dashboard
+                </a>
+                <a href="tapes.html" class="nav-link flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors hover:bg-slate-50">
+                    <i class="fas fa-tape w-5"></i> Tapes
+                </a>
+                <a href="musicas.html" class="nav-link flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors hover:bg-slate-50">
+                    <i class="fas fa-music w-5"></i> Músicas
+                </a>
+                <a href="artistas.html" class="nav-link flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors hover:bg-slate-50">
+                    <i class="fas fa-microphone w-5"></i> Artistas
+                </a>
+                <a href="gravadoras.html" class="nav-link flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors hover:bg-slate-50">
+                    <i class="fas fa-building w-5"></i> Gravadoras
+                </a>
+            </nav>
+        </div>
+
+        <!-- Parte inferior / Créditos -->
+        <div class="p-6 border-t border-slate-100 bg-slate-50">
+            <p class="text-[10px] text-slate-500 uppercase font-semibold tracking-wide">
+                Acervo Musical Somax
+            </p>
+            <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                Sistema interno de gestão de tapes, faixas e artistas.
+            </p>
+            <p class="text-[10px] text-slate-400 mt-3">
+                © 2026 Somax Studios
+            </p>
+        </div>
+
+    </aside>
+    `;
+
+    const headerHTML = `
+    <header class="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-40">
+        
+        <button id="menuMobile" class="md:hidden text-slate-600 text-xl">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Texto institucional -->
+        <div class="text-sm font-semibold text-slate-600 uppercase tracking-wide hidden sm:block">
+            Acervo Musical Somax Studios
+        </div>
+
+        <div class="text-[11px] text-slate-400 uppercase tracking-wider">
+            Gestão de Catálogo
+        </div>
+
+    </header>
+    `;
+
+    // Injeta o HTML ao carregar
+    document.addEventListener("DOMContentLoaded", () => {
+
+        document.body.insertAdjacentHTML('afterbegin', sidebarHTML);
+        document.getElementById('header-container').innerHTML = headerHTML;
+
+        // Menu mobile
+        document.getElementById('menuMobile').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        });
+
+        // Link ativo
+        const currentPage = window.location.pathname.split("/").pop() || "index.html";
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.getAttribute('href') === currentPage) {
+                link.classList.add('bg-slate-50', 'text-indigo-600', 'border-r-4', 'border-indigo-600');
+            } else {
+                link.classList.add('text-slate-600');
+            }
+        });
+
+    });
+</script>
+
+<!-- Script principal da página (listagem de tapes) -->
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const supabaseClient = supabase.createClient(
+            'https://edabpftowxcyvsmuzzdf.supabase.co',
+            'sb_publishable_xUUhpgcgM7bc2Q5a02smMw_n5xDicbW'
+        );
 
         let currentPage = 1;
         const limit = 15;
         let selectedStatus = 'all';
         let selectedGravadora = '';
-        let currentSort = { column: 'titulo', table: null, ascending: true };
+        let currentSort = 'titulo';
+
+        // Elementos DOM
+        const container = document.getElementById('tapes-list-container');
+        const totalSpan = document.getElementById('total-records');
+        const searchInput = document.getElementById('search-input');
+        const filterGravadora = document.getElementById('filter-gravadora');
+        const sortTitulo = document.getElementById('sort-titulo');
+        const sortArtista = document.getElementById('sort-artista');
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        const currentPageSpan = document.getElementById('current-page');
+        const exportBtn = document.getElementById('export-csv-btn');
 
         async function carregarGravadorasSelect() {
-            const { data } = await supabaseClient.from('gravadoras').select('id, nome').order('nome');
-            const select = document.getElementById('filter-gravadora');
-            data?.forEach(g => select.add(new Option(g.nome, g.id)));
+            const { data } = await supabaseClient
+                .from('gravadoras')
+                .select('id, nome')
+                .order('nome');
+
+            filterGravadora.innerHTML = '<option value="">Todas</option>';
+            data?.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.textContent = g.nome;
+                filterGravadora.appendChild(opt);
+            });
         }
 
         async function carregarTapes() {
-            const container = document.getElementById('tapes-list-container');
-            container.innerHTML = '<tr><td colspan="5" class="py-12 text-center text-slate-400">Carregando...</td></tr>';
-            
+            if (!container) return;
+
+            container.innerHTML =
+                '<tr><td colspan="5" class="py-10 text-center text-slate-400">Carregando...</td></tr>';
+
             try {
-                const busca = document.getElementById('search-input').value.trim();
-                let query = supabaseClient.from('tapes').select('*, artistas(nome), gravadoras(nome)', { count: 'exact' });
+                const busca = searchInput.value.trim();
+
+                let query = supabaseClient
+                    .from('tapes')
+                    .select('*, artistas(nome)', { count: 'exact' });
 
                 if (busca) query = query.ilike('titulo', `%${busca}%`);
                 if (selectedGravadora) query = query.eq('gravadora_id', selectedGravadora);
@@ -132,84 +349,140 @@
                 if (selectedStatus === 'off') query = query.eq('subiu_streaming', false);
 
                 const { data, count, error } = await query
-                    .order(currentSort.column, { ascending: currentSort.ascending, foreignTable: currentSort.table })
+                    .order(currentSort, { ascending: true })
                     .range((currentPage - 1) * limit, currentPage * limit - 1);
 
                 if (error) throw error;
-                document.getElementById('total-records').textContent = count || 0;
-                renderizarTabela(data || []);
+
+                totalSpan.textContent = count || 0;
+
+                container.innerHTML = (data || []).map(t => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-2 md:px-6 py-3 text-xs text-slate-400 truncate" data-label="Nº">#${t.numero_tape || '-'}</td>
+                        <td class="px-2 md:px-6 py-3 font-bold uppercase break-words whitespace-normal" data-label="Título">${t.titulo || '---'}</td>
+                        <td class="px-2 md:px-6 py-3 text-indigo-600 text-xs font-bold uppercase truncate" data-label="Artista">${t.artistas?.nome || '---'}</td>
+                        <td class="px-2 md:px-6 py-3" data-label="Status">
+                            ${t.subiu_streaming
+                                ? '<span class="text-emerald-600 font-bold text-xs">ON</span>'
+                                : '<span class="text-slate-300 text-xs">OFF</span>'}
+                        </td>
+                        <td class="px-2 md:px-6 py-3 text-right space-x-3" data-label="Ações">
+                            <a href="ver.html?id=${t.id}" class="text-indigo-600"><i class="fas fa-eye"></i></a>
+                            <a href="editar.html?id=${t.id}" class="text-indigo-600"><i class="fas fa-pen"></i></a>
+                        </td>
+                    </tr>
+                `).join('');
+
                 atualizarBotoes(count);
             } catch (err) {
-                container.innerHTML = '<tr><td colspan="5" class="py-12 text-center text-red-500 font-bold">Erro ao carregar dados.</td></tr>';
+                console.error(err);
+                container.innerHTML =
+                    '<tr><td colspan="5" class="py-10 text-center text-red-600 font-bold">Erro ao carregar dados.</td></tr>';
             }
         }
 
-        function renderizarTabela(tapes) {
-            const container = document.getElementById('tapes-list-container');
-            container.innerHTML = tapes.map(t => `
-                <tr class="hover:bg-slate-50/80 transition-colors group">
-                    <td class="px-6 py-4 font-mono text-[10px] text-slate-400">#${t.numero_tape || '-'}</td>
-                    <td class="px-6 py-4 font-black text-slate-900 uppercase text-[12px] tracking-tight">${t.titulo || '---'}</td>
-                    <td class="px-6 py-4 text-indigo-600 font-bold text-[11px] uppercase">${t.artistas?.nome || 'Desconhecido'}</td>
-                    <td class="px-6 py-4">
-                        ${t.subiu_streaming ? '<span class="text-emerald-600 font-black text-[9px] border border-emerald-200 bg-emerald-50 px-2 py-0.5 rounded-full">ON</span>' : '<span class="text-slate-300 font-black text-[9px]">OFF</span>'}
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end gap-1">
-                            <a href="ver.html?id=${t.id}" class="p-2 text-slate-400 hover:text-indigo-600 transition-all" title="Ver"><i class="fas fa-eye text-xs"></i></a>
-                            <a href="editar.html?id=${t.id}" class="p-2 text-slate-400 hover:text-amber-600 transition-all" title="Editar"><i class="fas fa-pen text-[10px]"></i></a>
-                            <button onclick="confirmarExclusao('${t.id}', '${t.titulo}')" class="p-2 text-slate-400 hover:text-rose-600 transition-all" title="Excluir"><i class="fas fa-trash text-xs"></i></button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+        function atualizarBotoes(total) {
+            currentPageSpan.textContent = currentPage;
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage * limit >= total;
         }
 
-        async function confirmarExclusao(id, titulo) {
-            if (confirm(`Deseja excluir permanentemente o tape: ${titulo.toUpperCase()}?`)) {
-                const { error } = await supabaseClient.from('tapes').delete().eq('id', id);
-                if (error) {
-                    alert("Erro ao excluir!");
-                } else {
-                    carregarTapes();
-                }
-            }
-        }
+        // Eventos
+        prevBtn.onclick = () => { currentPage--; carregarTapes(); };
+        nextBtn.onclick = () => { currentPage++; carregarTapes(); };
+
+        searchInput.oninput = () => {
+            currentPage = 1;
+            carregarTapes();
+        };
+
+        filterGravadora.onchange = e => {
+            selectedGravadora = e.target.value;
+            currentPage = 1;
+            carregarTapes();
+        };
 
         window.setStatusFilter = (status, btn) => {
             selectedStatus = status;
             btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('filter-active'));
             btn.classList.add('filter-active');
-            currentPage = 1; carregarTapes();
+            currentPage = 1;
+            carregarTapes();
         };
 
-        document.getElementById('sort-tape').onclick = function() {
-            currentSort = { column: 'titulo', table: null, ascending: true };
-            atualizarSortUI(this);
+        sortTitulo.onclick = () => {
+            currentSort = 'titulo';
+            carregarTapes();
         };
 
-        document.getElementById('sort-artist').onclick = function() {
-            currentSort = { column: 'nome', table: 'artistas', ascending: true };
-            atualizarSortUI(this);
+        sortArtista.onclick = () => {
+            currentSort = 'artista_id';
+            carregarTapes();
         };
 
-        function atualizarSortUI(btn) {
-            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('filter-active'));
-            btn.classList.add('filter-active');
-            currentPage = 1; carregarTapes();
+        // Função para exportar CSV
+        async function exportarCSV() {
+            try {
+                const busca = searchInput.value.trim();
+
+                let query = supabaseClient
+                    .from('tapes')
+                    .select('*, artistas(nome)');
+
+                if (busca) query = query.ilike('titulo', `%${busca}%`);
+                if (selectedGravadora) query = query.eq('gravadora_id', selectedGravadora);
+                if (selectedStatus === 'on') query = query.eq('subiu_streaming', true);
+                if (selectedStatus === 'off') query = query.eq('subiu_streaming', false);
+
+                // Ordenar da mesma forma que a listagem
+                query = query.order(currentSort, { ascending: true });
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    alert('Nenhum registro para exportar.');
+                    return;
+                }
+
+                // Preparar linhas do CSV
+                const rows = [];
+                // Cabeçalho
+                rows.push(['Nº', 'Título', 'Artista', 'Status'].join(','));
+
+                // Dados
+                data.forEach(t => {
+                    const numero = t.numero_tape ? `#${t.numero_tape}` : '-';
+                    const titulo = (t.titulo || '---').replace(/,/g, ' '); // remove vírgulas para não quebrar CSV
+                    const artista = (t.artistas?.nome || '---').replace(/,/g, ' ');
+                    const status = t.subiu_streaming ? 'ON' : 'OFF';
+                    rows.push([numero, titulo, artista, status].join(','));
+                });
+
+                const csvContent = rows.join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `tapes_${new Date().toISOString().slice(0,10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('Erro ao exportar CSV:', err);
+                alert('Erro ao gerar arquivo CSV.');
+            }
         }
 
-        document.getElementById('filter-gravadora').onchange = (e) => { selectedGravadora = e.target.value; currentPage = 1; carregarTapes(); };
-        document.getElementById('search-input').oninput = () => { clearTimeout(window.t); window.t = setTimeout(() => { currentPage = 1; carregarTapes(); }, 500); };
-        function atualizarBotoes(total) {
-            document.getElementById('current-page').textContent = currentPage;
-            document.getElementById('prev-page').disabled = currentPage <= 1;
-            document.getElementById('next-page').disabled = currentPage * limit >= total;
-        }
-        document.getElementById('prev-page').onclick = () => { currentPage--; carregarTapes(); window.scrollTo(0,0); };
-        document.getElementById('next-page').onclick = () => { currentPage++; carregarTapes(); window.scrollTo(0,0); };
+        exportBtn.addEventListener('click', exportarCSV);
 
-        (async () => { await carregarGravadorasSelect(); await carregarTapes(); })();
-    </script>
+        // Inicialização
+        await carregarGravadorasSelect();
+        await carregarTapes();
+    });
+</script>
+
 </body>
 </html>
