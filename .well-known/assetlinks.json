@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.ulisses900.twa",
+        "sha256_cert_fingerprints": ["7D:7A:15:1F:C3:F3:EE:C6:EC:E5:4A:1E:69:FB:99:84:17:F3:66:E2:92:E0:D2:21:8A:36:D4:C3:F8:66:01:E2"]
+      }
+    }]
