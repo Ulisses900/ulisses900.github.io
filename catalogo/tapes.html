@@ -477,7 +477,90 @@ body { font-family: 'Inter', sans-serif; }
         // ==========================================
 
         async function exportarCSV() {
-            // ... (O CÓDIGO DE EXPORTAR CSV SE MANTÉM IGUAL) ...
+            try {
+                // 1. Recolhe os filtros atuais (iguais aos usados na listagem)
+                const busca = searchInput.value.trim();
+                const gravadoraId = selectedGravadora;
+                const statusStreaming = selectedStatus === 'on' ? true : (selectedStatus === 'off' ? false : null);
+
+                // 2. Monta a consulta no Supabase, incluindo os relacionamentos
+                let query = supabaseClient
+                    .from('tapes')
+                    .select(`
+                        *,
+                        artistas (nome),
+                        gravadoras (nome)
+                    `);
+
+                if (busca) {
+                    query = query.ilike('titulo', `%${busca}%`);
+                }
+                if (gravadoraId) {
+                    query = query.eq('gravadora_id', gravadoraId);
+                }
+                if (statusStreaming !== null) {
+                    query = query.eq('subiu_streaming', statusStreaming);
+                }
+
+                // 3. Executa a consulta (sem paginação, pega todos os registros)
+                const { data, error } = await query.order('numero_tape', { ascending: true });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    alert('Nenhum registro encontrado para exportar.');
+                    return;
+                }
+
+                // 4. Define os cabeçalhos do CSV
+                const headers = [
+                    'Número',
+                    'Título',
+                    'Artista',
+                    'Gravadora',
+                    'Status (Streaming)'
+                ];
+
+                // 5. Mapeia os dados para linhas do CSV
+                const rows = data.map(item => [
+                    item.numero_tape || '',
+                    item.titulo || '',
+                    item.artistas?.nome || '',
+                    item.gravadoras?.nome || '',
+                    item.subiu_streaming ? 'ON' : 'OFF'
+                ]);
+
+                // 6. Função auxiliar para escapar campos (evita problemas com vírgulas, aspas, quebras)
+                const escapeCSV = (cell) => {
+                    if (cell === null || cell === undefined) return '';
+                    const str = String(cell);
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                };
+
+                // 7. Monta o conteúdo do CSV
+                const csvContent = [
+                    headers.map(escapeCSV).join(','),
+                    ...rows.map(row => row.map(escapeCSV).join(','))
+                ].join('\n');
+
+                // 8. Cria um blob e dispara o download
+                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.href = url;
+                link.setAttribute('download', 'tapes_export.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+            } catch (err) {
+                console.error('Erro ao exportar CSV:', err);
+                alert('Falha ao exportar os dados. Verifique o console para mais detalhes.');
+            }
         }
 
         exportBtn.addEventListener('click', exportarCSV);
